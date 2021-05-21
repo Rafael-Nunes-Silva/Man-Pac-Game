@@ -1,0 +1,21 @@
+Example:
+5 10
+##########
+#,,,@#P#&#
+#,####,#,#
+#,,,,,,,,#
+##########
+------------------------------------------------------
+the first number refers to the map height
+the second number refers to the map width
+
+the map's file name should be as "Map_0.txt",
+where the 0 is the number of the map wich 
+you'll use to select the map at the start of the game
+------------------------------------------------------
+Symbols:
+# => walls
+, => walkable space
+P => player
+& => enemy
+@ => bomb
