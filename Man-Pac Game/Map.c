@@ -1,10 +1,15 @@
 #include "Map.h"
-int IsWalkable(Map* map, Position pos) {
+int IsWalkable(Map* map, Position pos, char character) {
 	if (map->matrix[pos.y][pos.x] == WalkableSymbol)
 		return 1;
 
-	if (map->matrix[pos.y][pos.x] == BombSymbol)
-		return 1;
+	if (character == PlayerSymbol) {
+		if (map->matrix[pos.y][pos.x] == BombSymbol)
+			return 1;
+
+		if (map->matrix[pos.y][pos.x] == EnemySymbol)
+			return 1;
+	}
 
 	if (map->matrix[pos.y][pos.x] == PlayerSymbol)
 		return 1;
@@ -29,6 +34,36 @@ int CheckEnemies(Map* map) {
 		}
 	}
 	return enemies;
+}
+
+int FindInMap(Map* map, Position* character, char c, int index) {
+	for (int y = 0; y < map->lines; y++) {
+		for (int x = 0; x < map->columns; x++) {
+			if (map->matrix[y][x] == c) {
+				if (index <= 0) {
+					character->x = x;
+					character->y = y;
+					return 1;
+				}
+				index--;
+			}
+		}
+	}
+	return 0;
+}
+void GetEnemy(Map* map, Position* enemies, int index) {
+	for (int y = 0; y < map->lines; y++) {
+		for (int x = 0; x < map->columns; x++) {
+			if (map->matrix[y][x] == EnemySymbol) {
+				if (index <= 0) {
+					enemies->x = x;
+					enemies->y = y;
+					return;
+				}
+				index--;
+			}
+		}
+	}
 }
 
 void LoadMap(Map* map, int mapid) {

@@ -7,7 +7,21 @@
 Map map;
 int mapID = -1;
 
-Character player;
+Position player;
+int playerBombs = 0;
+
+Position enemies[10];
+int aliveEnemies = 0;
+Position posAround[4] = {
+						{0, -1},
+				{-1, 0},		{1, 0},
+						{0,  1},
+};
+Position usablePos[4] = {
+	{0,0}, {0,0}, {0,0}, {0,0}
+};
+Position usedPos[10];
+int F[4];
 
 int main() {
 	ConfigureGame();
@@ -15,18 +29,15 @@ int main() {
 	InitGame();
 
 	do {
-		printf("%c - Player | %c - Enemy | %c - Bomb | Bombs: %i\n", PlayerSymbol, EnemySymbol, BombSymbol, player.bombs);
-		printf("Controls:\n");
-		printf(" W \nASD\nMovement\nB Bomb\n");
-
 		GetInput();
-
-		EnemiesLogic();
-
+		
 		system("cls");
 		PrintTitle();
 
 		DrawMap(&map);
+		printf("%c - Player | %c - Enemy | %c - Bomb | Bombs: %i\n", PlayerSymbol, EnemySymbol, BombSymbol, playerBombs);
+		printf("Controls:\n");
+		printf(" W \nASD\nMovement\nB Bomb\n");
 	} while (!ShouldFinish());
 
 	EndGame();
@@ -45,16 +56,9 @@ void InitGame() {
 	LoadMap(&map, mapID);
 	DrawMap(&map);
 
-	int pows = 0, enems = 0;
-	for (int i = 0; i < map.lines; i++) {
-		for (int j = 0; j < map.columns; j++) {
-			if (map.matrix[i][j] == PlayerSymbol) {
-				player.pos.x = j;
-				player.pos.y = i;
-				player.alive = 1;
-			}
-		}
-	}
+	FindInMap(&map, &player, PlayerSymbol, 0);
+
+	SetupEnemiesLogic();
 }
 void ConfigureGame() {
 	printf("Insira o numero do mapa que quer jogar (-1 mapa teste): ");
@@ -65,17 +69,40 @@ void GetInput() {
 	char input;
 	scanf(" %c", &input);
 
-	if (input == Bomb && player.bombs > 0) {
-		UseBomb(player.pos);
-		player.bombs--;
+	int playerMoved = 0;
+	switch (input) {
+	case MoveUP:
+		playerMoved=1;
+		Move(UP, &player, PlayerSymbol);
+		break;
+	case MoveDOWN:
+		playerMoved=1;
+		Move(DOWN, &player, PlayerSymbol);
+		break;
+	case MoveRIGHT:
+		playerMoved=1;
+		Move(RIGHT, &player, PlayerSymbol);
+		break;
+	case MoveLEFT:
+		playerMoved=1;
+		Move(LEFT, &player, PlayerSymbol);
+		break;
+	case Bomb:
+		if (playerBombs > 0) {
+			UseBomb(player);
+			playerBombs--;
+		}
+		break;
+	default:
+		return;
+		break;
 	}
 
-	if		(input == MoveUP)		Move(UP, &player);
-	else if (input == MoveDOWN)		Move(DOWN, &player);
-	if		(input == MoveLEFT)		Move(LEFT, &player);
-	else if (input == MoveRIGHT)	Move(RIGHT, &player);
+	if (playerMoved) {
+		EnemiesLogic();
+	}
 }
-void Move(MoveDir dir, Position* character) {
+void Move(MoveDir dir, Position* character, char symbol) {
 	Position nextPos = *character;
 
 	switch (dir) {
@@ -97,100 +124,97 @@ void Move(MoveDir dir, Position* character) {
 	}
 
 	if (!InsideMap(&map, nextPos)) return;
-	if (!IsWalkable(&map, nextPos)) return;
+	if (!IsWalkable(&map, nextPos, symbol)) return;
 
 	if (map.matrix[character->y][character->x] == PlayerSymbol && map.matrix[nextPos.y][nextPos.x] == BombSymbol) {
 		map.matrix[nextPos.y][nextPos.x] = WalkableSymbol;
-		player.bombs++;
+		playerBombs++;
 	}
 	else if (map.matrix[character->y][character->x] == EnemySymbol && map.matrix[nextPos.y][nextPos.x] == PlayerSymbol) {
 		map.matrix[nextPos.y][nextPos.x] = WalkableSymbol;
-		player.alive = 0;
 	}
 
 	map.matrix[character->y][character->x] = WalkableSymbol;
-	map.matrix[nextPos.y][nextPos.x] = (character == &player.pos) ? PlayerSymbol : EnemySymbol;
+	map.matrix[nextPos.y][nextPos.x] = (character == &player) ? PlayerSymbol : EnemySymbol;
 	*character = nextPos;
 }
+void SetupEnemiesLogic() {
+	aliveEnemies = CheckEnemies(&map);
+
+	for (int i = 0; i < aliveEnemies; i++) {
+		GetEnemy(&map, &enemies[i], i);
+		usedPos[i].x = -1;
+		usedPos[i].y = -1;
+	}
+}
 void EnemiesLogic() {
-	Position playerDir;
-	Position temPos;
-	Position enemPos;
-	int aliveEnemies = CheckEnemies(&map);
+	Position betterPos;
+	betterPos.x = 0;
+	betterPos.y = 0;
 
-	for (int i = 0; i < map.lines; i++) {
-		for (int j = 0; j < map.columns; j++) {
-			if (aliveEnemies > 0 && map.matrix[i][j] == EnemySymbol) {
-				enemPos.x = j;
-				enemPos.y = i;
+	for (int e = 0; e < aliveEnemies; e++) {
+		for (int i = 0; i < 4; i++) {
+			Position pos;
+			pos.x = enemies[e].x + posAround[i].x;
+			pos.y = enemies[e].y + posAround[i].y;
 
-				playerDir.x = (player.pos.x < enemPos.x) ? -1 : 1;
-				playerDir.y = (player.pos.y < enemPos.y) ? -1 : 1;
-
-				temPos.x = enemPos.x + playerDir.x;
-				temPos.y = enemPos.y + playerDir.y;
-
-				int moveOrder = rand() % 2;
-
-				if (moveOrder == 0) {
-					if (playerDir.x > 0) Move(RIGHT, &enemPos);
-					else if (playerDir.x < 0) Move(LEFT, &enemPos);
-				}
-				else {
-					if (playerDir.y > 0) Move(DOWN, &enemPos);
-					else if (playerDir.y < 0) Move(UP, &enemPos);
-				}
-
-				aliveEnemies--;
+			if (!InsideMap(&map, pos) || !IsWalkable(&map, pos, EnemySymbol)
+				|| (pos.x == usedPos[e].x && pos.y == usedPos[e].y)) {
+				F[i] = -1;
+				if (i == aliveEnemies)
+					SetupEnemiesLogic();
+				continue;
 			}
+
+			usablePos[i] = pos;
+			F[i] = ((pos.x - player.x) < 0) ? -(pos.x - player.x) : (pos.x - player.x);
+			F[i] += ((pos.y - player.y) < 0) ? -(pos.y - player.y) : (pos.y - player.y);
+		}
+
+		int lowerF = 1000;
+		for (int i = 0; i < 4; i++) {
+			if (F[i] >= 0 && F[i] < lowerF) {
+				lowerF = F[i];
+				betterPos = usablePos[i];
+			}
+		}
+
+		usedPos[e] = enemies[e];
+
+		if		(betterPos.y < enemies[e].y)		Move(UP, &enemies[e], EnemySymbol);
+		else if (betterPos.y > enemies[e].y)		Move(DOWN, &enemies[e], EnemySymbol);
+		else {
+			if		(betterPos.x > enemies[e].x)	Move(RIGHT, &enemies[e], EnemySymbol);
+			else if (betterPos.x < enemies[e].x)	Move(LEFT, &enemies[e], EnemySymbol);
 		}
 	}
 }
-void UseBomb(Position pos) {
-	Position p;
-	p.x = pos.x + 1;
-	p.y = pos.y + 0;
-	if (InsideMap(&map, p) && map.matrix[p.y][p.x] == EnemySymbol)
-		map.matrix[p.y][p.x] = WalkableSymbol;
+void UseBomb(Position pos)
+{
+	Position bombArea[8] = {
+						{0, -2},
+						{0, -1},
+		{-2, 0}, {-1, 0},		{1, 0}, {2, 0},
+						{0, 1},
+						{0, 2},
+	};
+	for (int i = 0; i < 8; i++) {
+		Position p;
+		p.x = pos.x + bombArea[i].x;
+		p.y = pos.y + bombArea[i].y;
 
-	p.x = pos.x + 2;
-	p.y = pos.y + 0;
-	if (InsideMap(&map, p) && map.matrix[pos.y][pos.x] == EnemySymbol)
-		map.matrix[pos.y][pos.x] = WalkableSymbol;
-
-	p.x = pos.x - 1;
-	p.y = pos.y + 0;
-	if (InsideMap(&map, p) && map.matrix[p.y][p.x] == EnemySymbol)
-		map.matrix[p.y][p.x] = WalkableSymbol;
-
-	p.x = pos.x - 2;
-	p.y = pos.y + 0;
-	if (InsideMap(&map, p) && map.matrix[p.y][p.x ] == EnemySymbol) 
-		map.matrix[p.y][p.x] = WalkableSymbol;
-
-	p.x = pos.x + 0;
-	p.y = pos.y + 1;
-	if (InsideMap(&map, p) && map.matrix[p.y][p.x] == EnemySymbol) 
-		map.matrix[p.y][p.x] = WalkableSymbol;
-
-	p.x = pos.x + 0;
-	p.y = pos.y + 2;
-	if (InsideMap(&map, p) && map.matrix[p.y][p.x] == EnemySymbol) 
-		map.matrix[p.y][p.x] = WalkableSymbol;
-
-	p.x = pos.x + 0;
-	p.y = pos.y - 1;
-	if (InsideMap(&map, p) && map.matrix[p.y][p.x] == EnemySymbol) 
-		map.matrix[p.y][p.x] = WalkableSymbol;
-
-	p.x = pos.x + 0;
-	p.y = pos.y - 2;
-	if (InsideMap(&map, p) && map.matrix[p.y][p.x] == EnemySymbol) 
-		map.matrix[p.y][p.x] = WalkableSymbol;
+		if (InsideMap(&map, p) && IsWalkable(&map, p, PlayerSymbol)) {
+			if (map.matrix[p.y][p.x] == EnemySymbol) {
+				map.matrix[p.y][p.x] = WalkableSymbol;
+				printf("Killed Enemy!\n");
+			}
+		}
+	}
+	SetupEnemiesLogic();
 }
 
 int ShouldFinish() {
-	if (!player.alive) {
+	if (!FindInMap(&map, &player, PlayerSymbol, 0)) {
 		printf("*****************************\n");
 		printf("*         You Died!         *\n");
 		printf("*****************************\n");
