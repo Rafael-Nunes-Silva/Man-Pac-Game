@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "Game.h"
 #include "Map.h"
@@ -42,6 +43,8 @@ int main() {
 
 	EndGame();
 
+	Restart();
+
 	return 0;
 }
 
@@ -51,6 +54,8 @@ void PrintTitle() {
 	printf("**********************************\n");
 }
 void InitGame() {
+	system("cls");
+
 	PrintTitle();
 
 	LoadMap(&map, mapID);
@@ -63,6 +68,16 @@ void InitGame() {
 void ConfigureGame() {
 	printf("Insira o numero do mapa que quer jogar (-1 mapa teste): ");
 	scanf("%i", &mapID);
+}
+void Restart() {
+	printf("Wanna play again? (Y) (N)\n");
+	char restart = ' ';
+	scanf(" %c", &restart);
+	restart = toupper(restart);
+	if (toupper(restart) == 'Y') {
+		system("cls");
+		main();
+	}
 }
 
 void GetInput() {
@@ -191,13 +206,107 @@ void EnemiesLogic() {
 }
 void UseBomb(Position pos)
 {
+	Position bombAreaUp[2]	  = { {0, -1}, {0, -2} };
+	Position bombAreaDown[2]  = { {0,  1}, {0,  2} };
+	Position bombAreaRight[2] = { {1,  0}, {2,  0} };
+	Position bombAreaLeft[2]  = { {-1, 0}, {-2, 0} };
+	/*
 	Position bombArea[8] = {
-						{0, -2},
-						{0, -1},
-		{-2, 0}, {-1, 0},		{1, 0}, {2, 0},
-						{0, 1},
-						{0, 2},
+		{0, -1}, {0, -2},
+		{0,  1}, {0,  2},
+		{-1, 0}, {-2, 0},
+		{1,  0}, {2,  0},
 	};
+	*/
+
+	Explode(pos, &bombAreaUp);
+	Explode(pos, &bombAreaDown);
+	Explode(pos, &bombAreaRight);
+	Explode(pos, &bombAreaLeft);
+
+	/*
+	while (1) {
+		Position p;
+		p.x = pos.x + bombArea[0].x;
+		p.y = pos.y + bombArea[0].y;
+
+		if (InsideMap(&map, p) && IsWalkable(&map, p, PlayerSymbol)) {
+			if (map.matrix[p.y][p.x] == EnemySymbol)
+				map.matrix[p.y][p.x] = WalkableSymbol;
+		}
+		else break;
+
+		p.x = pos.x + bombArea[1].x;
+		p.y = pos.y + bombArea[1].y;
+
+		if (InsideMap(&map, p) && IsWalkable(&map, p, PlayerSymbol)) {
+			if (map.matrix[p.y][p.x] == EnemySymbol)
+				map.matrix[p.y][p.x] = WalkableSymbol;
+		}
+		break;
+	}
+	while (1) {
+		Position p;
+		p.x = pos.x + bombArea[2].x;
+		p.y = pos.y + bombArea[2].y;
+
+		if (InsideMap(&map, p) && IsWalkable(&map, p, PlayerSymbol)) {
+			if (map.matrix[p.y][p.x] == EnemySymbol)
+				map.matrix[p.y][p.x] = WalkableSymbol;
+		}
+		else break;
+
+		p.x = pos.x + bombArea[3].x;
+		p.y = pos.y + bombArea[3].y;
+
+		if (InsideMap(&map, p) && IsWalkable(&map, p, PlayerSymbol)) {
+			if (map.matrix[p.y][p.x] == EnemySymbol)
+				map.matrix[p.y][p.x] = WalkableSymbol;
+		}
+		break;
+	}
+	while (1) {
+		Position p;
+		p.x = pos.x + bombArea[4].x;
+		p.y = pos.y + bombArea[4].y;
+
+		if (InsideMap(&map, p) && IsWalkable(&map, p, PlayerSymbol)) {
+			if (map.matrix[p.y][p.x] == EnemySymbol)
+				map.matrix[p.y][p.x] = WalkableSymbol;
+		}
+		else break;
+
+		p.x = pos.x + bombArea[5].x;
+		p.y = pos.y + bombArea[5].y;
+
+		if (InsideMap(&map, p) && IsWalkable(&map, p, PlayerSymbol)) {
+			if (map.matrix[p.y][p.x] == EnemySymbol)
+				map.matrix[p.y][p.x] = WalkableSymbol;
+		}
+		break;
+	}
+	while (1) {
+		Position p;
+		p.x = pos.x + bombArea[6].x;
+		p.y = pos.y + bombArea[6].y;
+
+		if (InsideMap(&map, p) && IsWalkable(&map, p, PlayerSymbol)) {
+			if (map.matrix[p.y][p.x] == EnemySymbol)
+				map.matrix[p.y][p.x] = WalkableSymbol;
+		}
+		else break;
+
+		p.x = pos.x + bombArea[7].x;
+		p.y = pos.y + bombArea[7].y;
+
+		if (InsideMap(&map, p) && IsWalkable(&map, p, PlayerSymbol)) {
+			if (map.matrix[p.y][p.x] == EnemySymbol)
+				map.matrix[p.y][p.x] = WalkableSymbol;
+		}
+		break;
+	}
+	*/
+	/*
 	for (int i = 0; i < 8; i++) {
 		Position p;
 		p.x = pos.x + bombArea[i].x;
@@ -210,7 +319,30 @@ void UseBomb(Position pos)
 			}
 		}
 	}
+	*/
 	SetupEnemiesLogic();
+}
+void Explode(Position pos, Position* area) {
+	while (1) {
+		Position p;
+		p.x = pos.x + area[0].x;
+		p.y = pos.y + area[0].y;
+
+		if (InsideMap(&map, p) && IsWalkable(&map, p, PlayerSymbol)) {
+			if (map.matrix[p.y][p.x] == EnemySymbol)
+				map.matrix[p.y][p.x] = WalkableSymbol;
+		}
+		else break;
+
+		p.x = pos.x + area[1].x;
+		p.y = pos.y + area[1].y;
+
+		if (InsideMap(&map, p) && IsWalkable(&map, p, PlayerSymbol)) {
+			if (map.matrix[p.y][p.x] == EnemySymbol)
+				map.matrix[p.y][p.x] = WalkableSymbol;
+		}
+		break;
+	}
 }
 
 int ShouldFinish() {

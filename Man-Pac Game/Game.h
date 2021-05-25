@@ -28,12 +28,14 @@ typedef enum MoveDirEnum MoveDir;
 void PrintTitle();
 void InitGame();
 void ConfigureGame();
+void Restart();
 
 void GetInput();
-void Move(MoveDir dir, Position* character);
+void Move(MoveDir dir, Position* character, char symbol);
 void SetupEnemiesLogic();
 void EnemiesLogic();
 void UseBomb(Position pos);
+void Explode(Position pos, Position* area);
 
 int ShouldFinish();
 void EndGame();
