@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "Map.h"
 int IsWalkable(Map* map, Position pos, char character) {
 	if (map->matrix[pos.y][pos.x] == WalkableSymbol)

@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,14 +14,8 @@ int playerBombs = 0;
 
 Position enemies[10];
 int aliveEnemies = 0;
-Position posAround[4] = {
-						{0, -1},
-				{-1, 0},		{1, 0},
-						{0,  1},
-};
-Position usablePos[4] = {
-	{0,0}, {0,0}, {0,0}, {0,0}
-};
+Position posAround[4] = { {0, -1}, {-1, 0}, {1, 0}, {0,  1} };
+Position usablePos[4] = { {0,0}, {0,0}, {0,0}, {0,0} };
 Position usedPos[10];
 int F[4];
 
